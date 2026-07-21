@@ -1,0 +1,25 @@
+### Ignored Directories
+/**/.pnp/
+/**/.rumdl_cache/
+/**/.worktrees/
+/**/coverage/
+/**/node_modules/
+/**/out-tsc/
+/**/tmp/
+/**/worktrees/
+
+### Ignored Files
+/**/.act/*
+/**/.pnp.js
+/**/.vscode/*
+/**/coverage/.lcov.info.*.tmp
+/**/coverage/lcov.info
+/**/npm-debug.log*
+/**/yarn-debug.log*
+/**/yarn-error.log*
+/**/hk.json
+
+### Always Add
+!dist/
+!.act/README.md
+!opencode.json

@@ -1,0 +1,187 @@
+[settings]
+color = true
+experimental = true
+idiomatic_version_file = true
+idiomatic_version_file_enable_tools = ["node"]
+legacy_version_file = false
+lockfile = true
+not_found_auto_install = true
+quiet = true
+### Debug
+#verbose = true
+#log_level = "debug"
+
+[env]
+_.file = ".env"
+ARCH = "{{exec(command='uname -m')}}"
+PROJECT_NAME = "{{exec(command='basename $PWD')}}"
+GITHUB_TOKEN = "{{env.GITHUB_TOKEN | default(value='')}}"
+
+[vars]
+
+[hooks]
+
+[tools]
+bun = { version = "1.3.14", postinstall = "bun install" }
+"aqua:hk" = {
+    version = "latest",
+    # To drop x64 completely from aqua, only request arm64 for macOS
+    # by utilizing standard 'os-arch' pair mapping strings:
+    os = ["linux", "windows", "macos/arm64"],
+    # Explicitly use 'arm64' to allow Apple Silicon and block Intel Mac (x64)
+    arch = ["arm64", "x64"],
+    locked = false
+}
+"cargo:hk" = {
+    version = "latest",
+    os = ["macos"],
+    arch = ["x64"],
+    locked = false
+}
+gh = { version = "latest" }
+gitleaks = { version = "latest" }
+actionlint = { version = "latest" }
+ripgrep = { version = "latest" }
+
+[deps.bun]
+auto = true  # Automatically runs bun install if lockfiles change or node_modules is missing
+
+[deps.cargo]
+auto = true
+
+[deps.gh]
+auto = true
+
+[tasks.secrets]
+alias = ["sec", "act:sec"]
+description = "Generate for authenticated user a GitHub Token"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo "Generating GitHub Token"
+echo "GITHUB_TOKEN=$(gh auth token)" > .act/.secrets
+'''
+
+[tasks.setup]
+alias = ["install", "dev:setup", "dev:up", "dev"]
+description = "Install all mise-managed tools"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo "Listing mise tools..."
+mise ls
+
+echo "Installing mise tools..."
+mise lock
+mise install
+mise deps
+echo "Done, mise tools are installed/synced...."
+'''
+
+[tasks.update-actions-pins]
+alias = ["update-actions", "uap"]
+description = "Update SHA pins for GitHub Actions to latest release"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+export GITHUB_TOKEN=$(gh auth token)
+echo "Updating All GitHub Actions workflows...."
+python3 scripts/update-actions-pins.py "${@}"
+unset GITHUB_TOKEN
+'''
+
+[tasks."update-actions-pins:write"]
+alias = ["update-actions:write", "uapw"]
+description = "Update SHA pins for GitHub Actions and write changes"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = "mise run update-actions-pins --write"
+
+[tasks."update-actions-pins:major"]
+alias = ["update-actions:major", "uapm"]
+description = "Update SHA pins and apply major version bumps"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = "mise run update-actions-pins --write --apply-major"
+
+[tasks.docs]
+alias = ["docs", "action-docs", "readme"]
+description = "Generate action documentation from action.yml into README.md"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# Updates sections in README.md via <!-- action-docs-* --> markers
+npx action-docs --source action.yml --update-readme README.md > /dev/null
+'''
+
+[tasks.act]
+alias = ["ghwt", "act-test"]
+description = "Run GitHub Actions workflow locally with act"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = "act -W .github/workflows/tests/act.yml"
+
+[tasks.markdownlint]
+alias = ["mdlint", "rumdl"]
+description = "Lint Markdown files with rumdl"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+npx rumdl check "$@"
+'''
+
+[tasks."markdownlint:fix"]
+alias = ["mdlint:fix", "rumdl:fix"]
+description = "Fix Markdown files with rumdl"
+depends = []
+depends_post = []
+shell = "bash -c"
+run = '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+npx rumdl fmt "$@"
+'''
+
+[tasks.ripgerp]
+alias = ["rp"]
+description = "Find all variables that are not meeting Naming Convention"
+depends = []
+depends_post = []
+shell = "bash -c"
+run =  '''
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+rg -t ts '\b[a-z0-9]+_[a-z0-9]+\b' || true
+'''

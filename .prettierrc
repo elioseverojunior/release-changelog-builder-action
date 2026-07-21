@@ -1,0 +1,19 @@
+{
+  "singleQuote": false,
+  "printWidth": 140,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "useTabs": false,
+  "semi": false,
+  "bracketSpacing": false,
+  "arrowParens": "avoid",
+  "overrides": [
+    {
+      "files": ["*.yml", "*.yaml"],
+      "options": {
+        "singleQuote": false
+      }
+    }
+  ],
+  "plugins": ["prettier-plugin-organize-imports"]
+}
